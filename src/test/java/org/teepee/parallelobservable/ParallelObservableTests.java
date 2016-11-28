@@ -245,10 +245,18 @@ public class ParallelObservableTests {
 
     @org.testng.annotations.Test
     public void testTakeWhile() throws Exception {
-    ParallelObservable<Integer> po = ParallelObservable.range(0, 10000000);
+        ParallelObservable<Integer> po = ParallelObservable.range(0, 10000000);
 
-    assert   po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeWhile((Integer i)->i < 5000000)
-            .getObservable().serialize().toList().blockingGet().size() <= 5000000;
+        assert   po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeWhile((Integer i)->i < 5000000)
+                .getObservable().serialize().toList().blockingGet().size() <= 5000000;
+    }
+
+    @org.testng.annotations.Test
+    public void testTakeUntil() throws Exception {
+        ParallelObservable<Integer> po = ParallelObservable.range(0, 10000000);
+
+        assert   po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeUntil((Integer i)->i >= 5000000)
+                .getObservable().serialize().toList().blockingGet().size() <= 5000001;
     }
 
 

@@ -8,6 +8,7 @@ import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import javafx.util.Pair;
 import org.teepee.parallelobservable.operators.Take;
+import org.teepee.parallelobservable.operators.TakeUntil;
 import org.teepee.parallelobservable.operators.TakeWhile;
 
 import java.util.ArrayList;
@@ -82,6 +83,10 @@ public class ParallelObservable<T> {
 
     public ParallelObservable<T> takeWhile(Predicate<? super T> predicate) {
         return new TakeWhile<>(this, predicate);
+    }
+
+    public ParallelObservable<T> takeUntil(Predicate<? super T> predicate) {
+        return new TakeUntil<>(this, predicate);
     }
 
 

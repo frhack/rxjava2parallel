@@ -199,7 +199,7 @@ public class ParallelObservableTests {
     public void testFilterBuffered() throws Exception {
 
         ParallelObservable<Integer> integerParallelObservable = ParallelObservable.range(999999999, 1000000000);
-        integerParallelObservable.setBufferSize(100);
+        integerParallelObservable.withBufferSize(100);
         ParallelObservable<Integer> evens = integerParallelObservable.withThreadsPoolSize(4).filter((Integer i) -> i % 2 == 0);
 
         assert evens.toObservable().take(10000).toList().blockingGet().size() == 10000;
@@ -223,7 +223,7 @@ public class ParallelObservableTests {
     public void testMapBuffered() throws Exception {
 
         ParallelObservable<Integer> integerParallelObservable = ParallelObservable.range(999999999, 1000000000);
-        integerParallelObservable.setBufferSize(100);
+        integerParallelObservable.withBufferSize(100);
         ParallelObservable<String> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).map(Object::toString);
 
 
@@ -257,7 +257,7 @@ public class ParallelObservableTests {
     public void testDoOnNextBuffered() throws Exception {
 
         ParallelObservable<Integer> integerParallelObservable = ParallelObservable.range(999999999, 1000000000);
-        integerParallelObservable.setBufferSize(100);
+        integerParallelObservable.withBufferSize(100);
         ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).doOnNext(System.out::println);
 
         Single<List<Integer>> s =  parallelObservablePrimes.toObservable().take(10000).toList();

@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Thread.sleep;
 
@@ -27,9 +26,6 @@ public class ParallelObservable<T> {
     private Integer bufferSize;
     private Integer threadsPoolSize;
     BlockingQueue<Runnable> tqueue;
-    ParallelObservable<T> parallelObservable = this;
-    final AtomicInteger counter = new AtomicInteger();
-    final Queue<T> queue = new ConcurrentLinkedQueue<T>();
 
     public ParallelObservable(Observable<T> observable) {
         this.observable = observable;
@@ -44,7 +40,7 @@ public class ParallelObservable<T> {
         return bufferSize;
     }
 
-    public ParallelObservable<T> setBufferSize(Integer bufferSize) {
+    public ParallelObservable<T> withBufferSize(Integer bufferSize) {
         this.bufferSize = bufferSize;
         return this;
     }

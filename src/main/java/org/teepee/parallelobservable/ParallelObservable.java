@@ -434,7 +434,7 @@ public class ParallelObservable<T> {
                 e.onComplete();
             }
         });
-        return new ParallelObservable<T>(o);
+        return new ParallelObservable<>(o);
     }
 
 

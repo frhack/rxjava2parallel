@@ -201,7 +201,7 @@ public class ParallelObservable<T> {
                 e.onComplete();
             }
         });
-        return new ParallelObservable<R>(o);
+        return new ParallelObservable<>(o);
     }
 
 
@@ -248,7 +248,7 @@ public class ParallelObservable<T> {
                 bufferIndex = 0;
             }
         });
-        return new ParallelObservable<T>(o);
+        return new ParallelObservable<>(o);
     }
 
 

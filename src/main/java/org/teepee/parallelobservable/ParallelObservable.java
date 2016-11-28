@@ -97,9 +97,9 @@ public class ParallelObservable<T> {
         ParallelObservable<T> o;
 
         if (bufferSize == null) {
-            o = getFilterParallelPipe(fun);
+            o = getFilterParallelObservable(fun);
         } else {
-            o = getFilterParallelPipeBuffered(fun);
+            o = getFilterParallelObservableBuffered(fun);
         }
         return o;
     }
@@ -108,18 +108,15 @@ public class ParallelObservable<T> {
         ParallelObservable<R> o;
 
         if (bufferSize == null) {
-            o = getPipeMapObservable(fun);
+            o = getMapParallelObservable(fun);
         } else {
-            o = getPipeMapObservableBuffered(fun);
+            o = getMapParallelObservableBuffered(fun);
         }
         return o;
     }
 
 
-    private final <R> ParallelObservable<R>
-
-
-    getPipeMapObservable(Function<? super T, ? extends R> fun) {
+    private <R> ParallelObservable<R> getMapParallelObservable(Function<? super T, ? extends R> fun) {
         ParallelObservable<T> p = this;
 
         Observable<R> o = Observable.create(new ObservableOnSubscribe<R>() {
@@ -152,57 +149,27 @@ public class ParallelObservable<T> {
         ParallelObservable<T> p = this;
         final Queue<T> queue = new ConcurrentLinkedQueue<>();
 
-        Observable<T> o = Observable.create(new ObservableOnSubscribe<T>() {
+        Observable<T> o = Observable.create(e -> {
 
-
-            @Override
-            public void subscribe(ObservableEmitter<T> e) {
-
-                initExecutorService();
-                observable.forEachWhile((T t) -> {
-                            p.submit(t, fun, e, queue);
-                            return !e.isDisposed();
-                        }
-                );
-                executorService.shutdown();
-                try {
-                    executorService.awaitTermination(3600, TimeUnit.SECONDS);
-                } catch (Exception ee) {
-                    e.onError(ee);
-                }
-                e.onComplete();
+            initExecutorService();
+            observable.forEachWhile((T t) -> {
+                        p.submit(t, fun, e, queue);
+                        return !e.isDisposed();
+                    }
+            );
+            executorService.shutdown();
+            try {
+                executorService.awaitTermination(3600, TimeUnit.SECONDS);
+            } catch (Exception ee) {
+                e.onError(ee);
             }
+            e.onComplete();
         });
         return new ParallelObservable<T>(o);
     }
 
-    private Observable<T> getFilterObservable(Function<? super T, Boolean> fun) {
-        ParallelObservable<T> parallelObservable = this;
 
-        return Observable.create(new ObservableOnSubscribe<T>() {
-
-
-            @Override
-            public void subscribe(ObservableEmitter<T> e) {
-                initExecutorService();
-                observable.forEachWhile((T t) -> {
-                            parallelObservable.submitFilter(t, fun, e);
-                            return !e.isDisposed();
-                        }
-                );
-                executorService.shutdown();
-                try {
-                    executorService.awaitTermination(3600, TimeUnit.SECONDS);
-                } catch (Exception ee) {
-                    e.onError(ee);
-                }
-                e.onComplete();
-            }
-        });
-    }
-
-
-    private final <R> ParallelObservable<R> getPipeMapObservableBuffered(Function<? super T, ? extends R> fun) {
+    private  <R> ParallelObservable<R> getMapParallelObservableBuffered(Function<? super T, ? extends R> fun) {
         ParallelObservable<T> p = this;
         Observable<R> o = Observable.create(new ObservableOnSubscribe<R>() {
             int bufferIndex = 0;
@@ -325,7 +292,6 @@ public class ParallelObservable<T> {
 
 
     private void submit(T element, Consumer<? super T> fun, ObservableEmitter<T> oe, Queue<T> queue) {
-        ParallelObservable<T> parallelObservable = this;
         submitWaitIfNeeded();
         executorService.submit(() -> {
             try {
@@ -354,7 +320,7 @@ public class ParallelObservable<T> {
 
 
     private void submitWaitIfNeeded() {
-        while (tqueue.size() > 500) {
+        while (tqueue.size() > 900) {
             try {
                 sleep(0, 100);
             } catch (Exception e) {
@@ -363,8 +329,6 @@ public class ParallelObservable<T> {
     }
 
     private <R> void submitMap(T element, Function<? super T, ? extends R> fun, ObservableEmitter<R> oe, Queue<R> queue) throws Exception {
-
-        ParallelObservable<T> parallelObservable = this;
         submitWaitIfNeeded();
         executorService.submit(() -> {
             try {
@@ -413,34 +377,31 @@ public class ParallelObservable<T> {
         }
     }
 
-    private ParallelObservable<T> getFilterParallelPipe(Function<? super T, Boolean> fun) {
+    private ParallelObservable<T> getFilterParallelObservable(Function<? super T, Boolean> fun) {
         ParallelObservable<T> parallelObservable = this;
 
-        Observable<T> o = Observable.create(new ObservableOnSubscribe<T>() {
-
-
-            @Override
-            public void subscribe(ObservableEmitter<T> e) {
-                initExecutorService();
-                observable.forEachWhile((T t) -> {
-                            parallelObservable.submitFilter(t, fun, e);
-                            return !e.isDisposed();
-                        }
-                );
-                executorService.shutdown();
-                try {
-                    executorService.awaitTermination(3600, TimeUnit.SECONDS);
-                } catch (Exception ee) {
-                    e.onError(ee);
-                }
-                e.onComplete();
+        Observable<T> o = Observable.create(e -> {
+            initExecutorService();
+            observable.forEachWhile((T t) -> {
+                        parallelObservable.submitFilter(t, fun, e);
+                        return !e.isDisposed();
+                    }
+            );
+            executorService.shutdown();
+            try {
+                executorService.awaitTermination(3600, TimeUnit.SECONDS);
+            } catch (Exception ee) {
+                e.onError(ee);
             }
+            e.onComplete();
         });
-        return new ParallelObservable<T>(o);
+        return new ParallelObservable<>(o);
     }
 
 
-    private ParallelObservable<T> getFilterParallelPipeBuffered(Function<? super T, Boolean> fun) {
+
+
+    private ParallelObservable<T> getFilterParallelObservableBuffered(Function<? super T, Boolean> fun) {
         ParallelObservable<T> p = this;
         Observable<T> o = Observable.create(new ObservableOnSubscribe<T>() {
             int bufferIndex = 0;

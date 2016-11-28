@@ -67,8 +67,7 @@ public class ParallelObservable<T> {
     }
 
     public ParallelObservable<T> doOnNext(Consumer<? super T> fun) {
-        ParallelObservable<T> p = null;
-
+        ParallelObservable<T> p;
         if (bufferSize == null) {
             p = getDoOnNextObservable(fun);
         } else {
@@ -78,11 +77,11 @@ public class ParallelObservable<T> {
     }
 
     public ParallelObservable<T> take(long n) {
-        return new Take(this, n);
+        return new Take<>(this, n);
     }
 
     public ParallelObservable<T> takeWhile(Predicate<? super T> predicate) {
-        return new TakeWhile<T>(this, predicate);
+        return new TakeWhile<>(this, predicate);
     }
 
 

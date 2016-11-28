@@ -121,9 +121,8 @@ public class ParallelObservableTests {
         assert observablePrimes.take(10000).toList().blockingGet().size() == 10000;
         time1 = System.currentTimeMillis();
         Long nonParallelElapse = time1 - time0;
-        assert parallelElapse<nonParallelElapse;
+        assert parallelElapse < nonParallelElapse;
     }
-
 
 
     // test
@@ -142,8 +141,6 @@ public class ParallelObservableTests {
     }
 
 
-
-
     @org.testng.annotations.Test
     public void testFilterOutputAndSpeed() throws Exception {
 
@@ -151,12 +148,20 @@ public class ParallelObservableTests {
 
         ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable
                 .withThreadsPoolSize(4).filter((Integer c) -> {
-                    try{ sleep(1); }catch(Exception e){};
+                    try {
+                        sleep(1);
+                    } catch (Exception e) {
+                    }
+                    ;
                     String s = new Integer(c).toString();
                     return s.charAt(s.length() - 1) != '3';
                 })
                 .withThreadsPoolSize(4).filter((Integer c) -> {
-                    try{ sleep(1); }catch(Exception e){};
+                    try {
+                        sleep(1);
+                    } catch (Exception e) {
+                    }
+                    ;
                     String s = new Integer(c).toString();
                     return s.charAt(s.length() - 1) != '2';
                 });
@@ -169,12 +174,20 @@ public class ParallelObservableTests {
 
         integerStream = integerStream
                 .filter((int c) -> {
-                    try{ sleep(1); }catch(Exception e){};
+                    try {
+                        sleep(1);
+                    } catch (Exception e) {
+                    }
+                    ;
                     String s = new Integer(c).toString();
                     return s.charAt(s.length() - 1) != '3';
                 })
                 .filter((int c) -> {
-                    try{ sleep(1); }catch(Exception e){};
+                    try {
+                        sleep(1);
+                    } catch (Exception e) {
+                    }
+                    ;
                     String s = new Integer(c).toString();
                     return s.charAt(s.length() - 1) != '2';
                 });
@@ -190,9 +203,6 @@ public class ParallelObservableTests {
         assert parallelElapse < nonParallelElapse;
 
     }
-
-
-
 
 
     @org.testng.annotations.Test
@@ -247,18 +257,19 @@ public class ParallelObservableTests {
     public void testTakeWhile() throws Exception {
         ParallelObservable<Integer> po = ParallelObservable.range(0, 10000000);
 
-        assert   po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeWhile((Integer i)->i < 5000000)
-                .getObservable().serialize().toList().blockingGet().size() <= 5000000;
+        assert po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeWhile((Integer i) -> i < 5000000)
+                .toObservable().toList().blockingGet().size() <= 5000000;
     }
 
     @org.testng.annotations.Test
     public void testTakeUntil() throws Exception {
         ParallelObservable<Integer> po = ParallelObservable.range(0, 10000000);
 
-        assert   po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeUntil((Integer i)->i >= 5000000)
-                .getObservable().serialize().toList().blockingGet().size() <= 5000001;
+        long count = po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeUntil((Integer i) -> i >= 5000000)
+                .toObservable().toList().blockingGet().size();
+        //System.out.println(count);
+        assert count <= 5000010;
     }
-
 
 
     @org.testng.annotations.Test
@@ -268,8 +279,8 @@ public class ParallelObservableTests {
         integerParallelObservable.withBufferSize(100);
         ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).doOnNext(System.out::println);
 
-        Single<List<Integer>> s =  parallelObservablePrimes.toObservable().take(10000).toList();
-               assert s.blockingGet().size() == 10000;
+        Single<List<Integer>> s = parallelObservablePrimes.toObservable().take(10000).toList();
+        assert s.blockingGet().size() == 10000;
 
     }
 

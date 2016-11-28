@@ -1,6 +1,5 @@
 package org.teepee.parallelobservable;
 
-import groovy.transform.CompileStatic;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 
@@ -13,7 +12,6 @@ import static java.lang.Thread.sleep;
 /**
  * Created by francesco on 20/11/2016.
  */
-@CompileStatic
 
 
 public class ParallelObservableTests {
@@ -66,7 +64,7 @@ public class ParallelObservableTests {
 
         Observable<Integer> integerObservable = Observable.range(999999999, 1000000000);
         ParallelObservable<Integer> integerParallelObservable = new ParallelObservable<Integer>(integerObservable);
-        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.setThreadsPoolSize(9).filter((Integer c) -> {
+        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(9).filter((Integer c) -> {
             return BigInteger.valueOf(c).isProbablePrime(100000);
         });
 
@@ -81,10 +79,10 @@ public class ParallelObservableTests {
         Observable<Integer> integerObservable = Observable.range(999999999, 1000000000);
         ParallelObservable<Integer> integerParallelObservable = new ParallelObservable<>(integerObservable);
 
-        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.setThreadsPoolSize(4).filter((Integer c) -> {
+        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).filter((Integer c) -> {
             return BigInteger.valueOf(c).isProbablePrime(100000);
         })
-                .setThreadsPoolSize(4).filter((Integer i) -> {
+                .withThreadsPoolSize(4).filter((Integer i) -> {
                     String s = i.toString();
                     return s.charAt(s.length() - 1) == '3';
                 });
@@ -99,10 +97,10 @@ public class ParallelObservableTests {
         Observable<Integer> integerObservable = Observable.range(999999999, 1000000000);
         ParallelObservable<Integer> integerParallelObservable = new ParallelObservable<>(integerObservable);
 
-        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.setThreadsPoolSize(4).filter((Integer c) -> {
+        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).filter((Integer c) -> {
             return BigInteger.valueOf(c).isProbablePrime(100000);
         })
-                .setThreadsPoolSize(4).filter((Integer i) -> {
+                .withThreadsPoolSize(4).filter((Integer i) -> {
                     String s = i.toString();
                     return s.charAt(s.length() - 1) == '3';
                 });
@@ -152,12 +150,12 @@ public class ParallelObservableTests {
         ParallelObservable<Integer> integerParallelObservable = ParallelObservable.range(999999999, 2000);
 
         ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable
-                .setThreadsPoolSize(4).filter((Integer c) -> {
+                .withThreadsPoolSize(4).filter((Integer c) -> {
                     try{ sleep(1); }catch(Exception e){};
                     String s = new Integer(c).toString();
                     return s.charAt(s.length() - 1) != '3';
                 })
-                .setThreadsPoolSize(4).filter((Integer c) -> {
+                .withThreadsPoolSize(4).filter((Integer c) -> {
                     try{ sleep(1); }catch(Exception e){};
                     String s = new Integer(c).toString();
                     return s.charAt(s.length() - 1) != '2';
@@ -202,7 +200,7 @@ public class ParallelObservableTests {
 
         ParallelObservable<Integer> integerParallelObservable = ParallelObservable.range(999999999, 1000000000);
         integerParallelObservable.setBufferSize(100);
-        ParallelObservable<Integer> evens = integerParallelObservable.setThreadsPoolSize(4).filter((Integer i) -> i % 2 == 0);
+        ParallelObservable<Integer> evens = integerParallelObservable.withThreadsPoolSize(4).filter((Integer i) -> i % 2 == 0);
 
         assert evens.toObservable().take(10000).toList().blockingGet().size() == 10000;
 
@@ -214,7 +212,7 @@ public class ParallelObservableTests {
 
         ParallelObservable<Integer> integerParallelObservable = ParallelObservable.range(999999999, 1000000000);
 
-        ParallelObservable<String> parallelObservablePrimes = integerParallelObservable.setThreadsPoolSize(4).map(Object::toString);
+        ParallelObservable<String> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).map(Object::toString);
 
         assert parallelObservablePrimes.toObservable().take(10000).toList().blockingGet().size() == 10000;
 
@@ -226,7 +224,7 @@ public class ParallelObservableTests {
 
         ParallelObservable<Integer> integerParallelObservable = ParallelObservable.range(999999999, 1000000000);
         integerParallelObservable.setBufferSize(100);
-        ParallelObservable<String> parallelObservablePrimes = integerParallelObservable.setThreadsPoolSize(4).map(Object::toString);
+        ParallelObservable<String> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).map(Object::toString);
 
 
         assert parallelObservablePrimes.toObservable().take(10000).toList().blockingGet().size() == 10000;
@@ -239,7 +237,7 @@ public class ParallelObservableTests {
 
         ParallelObservable<Integer> integerParallelObservable = ParallelObservable.range(999999999, 1000000000);
 
-        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.setThreadsPoolSize(4).doOnNext(System.out::println);
+        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).doOnNext(System.out::println);
 
         assert parallelObservablePrimes.toObservable().take(10).toList().blockingGet().size() == 10;
 
@@ -249,7 +247,7 @@ public class ParallelObservableTests {
     public void testTakeWhile() throws Exception {
     ParallelObservable<Integer> po = ParallelObservable.range(0, 10000000);
 
-    assert   po.setThreadsPoolSize(4).doOnNext((Integer i) -> i++).setThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeWhile((Integer i)->i < 5000000)
+    assert   po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeWhile((Integer i)->i < 5000000)
             .getObservable().serialize().toList().blockingGet().size() <= 5000000;
     }
 
@@ -260,7 +258,7 @@ public class ParallelObservableTests {
 
         ParallelObservable<Integer> integerParallelObservable = ParallelObservable.range(999999999, 1000000000);
         integerParallelObservable.setBufferSize(100);
-        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.setThreadsPoolSize(4).doOnNext(System.out::println);
+        ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).doOnNext(System.out::println);
 
         Single<List<Integer>> s =  parallelObservablePrimes.toObservable().take(10000).toList();
                assert s.blockingGet().size() == 10000;

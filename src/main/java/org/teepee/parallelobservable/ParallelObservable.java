@@ -1,13 +1,14 @@
 package org.teepee.parallelobservable;
 
-import io.reactivex.*;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import javafx.util.Pair;
-import org.teepee.parallelobservable.operators.TakeWhile;
-import org.teepee.parallelobservable.operators.ToObservable;
 import org.teepee.parallelobservable.operators.Take;
+import org.teepee.parallelobservable.operators.TakeWhile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +53,7 @@ public class ParallelObservable<T> {
         return threadsPoolSize;
     }
 
-    public ParallelObservable<T> setThreadsPoolSize(Integer threadsPoolSize) {
+    public ParallelObservable<T> withThreadsPoolSize(Integer threadsPoolSize) {
         this.threadsPoolSize = threadsPoolSize;
         return this;
     }
@@ -173,13 +174,6 @@ public class ParallelObservable<T> {
                 } catch (Exception ee) {
                     e.onError(ee);
                 }
-                //System.out.println("complete");
-                /*while (!executorService.isTerminated()) {
-                    try {
-                        Thread.sleep(10);
-                    } catch (Exception ee) {
-                    }
-                }*/
                 e.onComplete();
             }
         });
@@ -341,17 +335,10 @@ public class ParallelObservable<T> {
             try {
                 fun.accept(element);
                 oe.onNext(element);
-                //parallelObservable.onNext(oe, element, queue);
-                //synchronized (this) {oe.onNext(element);}
             } catch (Exception e) {
                 oe.onError(e);
             }
         });
-    }
-
-
-    private <R> void onNext(ObservableEmitter<R> oe, R t, Queue<R> queue) {
-        oe.onNext(t);
     }
 
 
@@ -360,7 +347,6 @@ public class ParallelObservable<T> {
         executorService.submit(() -> {
             try {
                 if (fun.apply(element)) {
-                    //parallelObservable.onNext(oe, element, queue);
                     oe.onNext(element);
                 }
             } catch (Exception e) {
@@ -393,9 +379,7 @@ public class ParallelObservable<T> {
         executorService.submit(() -> {
             try {
                 R r = fun.apply(element);
-                //parallelObservable.onNext(oe, r, queue);
                 oe.onNext(r);
-                //synchronized (this) {oe.onNext(r);}
             } catch (Exception e) {
                 oe.onError(e);
             }

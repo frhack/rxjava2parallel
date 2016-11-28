@@ -12,7 +12,6 @@ import org.teepee.parallelobservable.operators.TakeWhile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.*;
 
 import static java.lang.Thread.sleep;
@@ -71,9 +70,9 @@ public class ParallelObservable<T> {
         ParallelObservable<T> p = null;
 
         if (bufferSize == null) {
-            p = getPipeObservable(fun);
+            p = getDoOnNextObservable(fun);
         } else {
-            p = getPipeObservableBuffered(fun);
+            p = getDoOnNextObservableBuffered(fun);
         }
         return p;
     }
@@ -117,43 +116,11 @@ public class ParallelObservable<T> {
 
 
     private <R> ParallelObservable<R> getMapParallelObservable(Function<? super T, ? extends R> fun) {
-        ParallelObservable<T> p = this;
-
-        Observable<R> o = Observable.create(new ObservableOnSubscribe<R>() {
-            final Queue<R> queue = new ConcurrentLinkedQueue<>();
-
-
-            @Override
-            public void subscribe(ObservableEmitter<R> e) {
-
-                initExecutorService();
-                observable.forEachWhile((T t) -> {
-                            p.submitMap(t, fun, e, queue);
-                            return !e.isDisposed();
-                        }
-                );
-                executorService.shutdown();
-                try {
-                    executorService.awaitTermination(3600, TimeUnit.SECONDS);
-                } catch (Exception ee) {
-                    e.onError(ee);
-                }
-                e.onComplete();
-            }
-        });
-        return new ParallelObservable<R>(o);
-    }
-
-
-    private ParallelObservable<T> getPipeObservable(Consumer<? super T> fun) {
-        ParallelObservable<T> p = this;
-        final Queue<T> queue = new ConcurrentLinkedQueue<>();
-
-        Observable<T> o = Observable.create(e -> {
+        Observable<R> o = Observable.create(e -> {
 
             initExecutorService();
             observable.forEachWhile((T t) -> {
-                        p.submit(t, fun, e, queue);
+                        submitMap(t, fun, e);
                         return !e.isDisposed();
                     }
             );
@@ -165,22 +132,41 @@ public class ParallelObservable<T> {
             }
             e.onComplete();
         });
-        return new ParallelObservable<T>(o);
+        return new ParallelObservable<R>(o);
+    }
+
+
+    private ParallelObservable<T> getDoOnNextObservable(Consumer<? super T> fun) {
+        Observable<T> o = Observable.create(e -> {
+
+            initExecutorService();
+            observable.forEachWhile((T t) -> {
+                        submit(t, fun, e);
+                        return !e.isDisposed();
+                    }
+            );
+            executorService.shutdown();
+            try {
+                executorService.awaitTermination(3600, TimeUnit.SECONDS);
+            } catch (Exception ee) {
+                e.onError(ee);
+            }
+            e.onComplete();
+        });
+        return new ParallelObservable<>(o);
     }
 
 
     private  <R> ParallelObservable<R> getMapParallelObservableBuffered(Function<? super T, ? extends R> fun) {
-        ParallelObservable<T> p = this;
         Observable<R> o = Observable.create(new ObservableOnSubscribe<R>() {
             int bufferIndex = 0;
-
 
             @Override
             public void subscribe(ObservableEmitter<R> e) {
                 initExecutorService();
                 final List<Future<R>> buffer = new ArrayList<Future<R>>(bufferSize);
                 observable.forEachWhile((T t) -> {
-                            p.submitMapBuffered(t, fun, e, buffer, bufferIndex);
+                            submitMapBuffered(t, fun, e, buffer, bufferIndex);
                             bufferIndex++;
                             if (bufferIndex == bufferSize) {
                                 executorService.shutdown();
@@ -219,7 +205,7 @@ public class ParallelObservable<T> {
     }
 
 
-    private ParallelObservable<T> getPipeObservableBuffered(Consumer<? super T> fun) {
+    private ParallelObservable<T> getDoOnNextObservableBuffered(Consumer<? super T> fun) {
         ParallelObservable<T> p = this;
         Observable<T> o = Observable.create(new ObservableOnSubscribe<T>() {
             int bufferIndex = 0;
@@ -291,7 +277,7 @@ public class ParallelObservable<T> {
     }
 
 
-    private void submit(T element, Consumer<? super T> fun, ObservableEmitter<T> oe, Queue<T> queue) {
+    private void submit(T element, Consumer<? super T> fun, ObservableEmitter<T> oe) {
         submitWaitIfNeeded();
         executorService.submit(() -> {
             try {
@@ -328,7 +314,7 @@ public class ParallelObservable<T> {
         }
     }
 
-    private <R> void submitMap(T element, Function<? super T, ? extends R> fun, ObservableEmitter<R> oe, Queue<R> queue) throws Exception {
+    private <R> void submitMap(T element, Function<? super T, ? extends R> fun, ObservableEmitter<R> oe) throws Exception {
         submitWaitIfNeeded();
         executorService.submit(() -> {
             try {

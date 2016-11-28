@@ -352,12 +352,6 @@ public class ParallelObservable<T> {
     }
 
 
-    public static void busyWaitNanos(long nanos) {
-        long waitUntil = System.nanoTime() + nanos;
-        while (waitUntil > System.nanoTime()) {
-            ;
-        }
-    }
 
     private void submitWaitIfNeeded() {
         while (tqueue.size() > 500) {

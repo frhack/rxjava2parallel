@@ -108,9 +108,8 @@ public class ParallelObservable<T> {
 
 
 
-    public ParallelObservable<T> filter(Function<? super T, Boolean> fun) {
+    public ParallelObservable<T> filter(Predicate<? super T> fun) {
         ParallelObservable<T> o;
-
         if (bufferSize == null) {
             o = getFilterParallelObservable(fun);
         } else {
@@ -305,11 +304,11 @@ public class ParallelObservable<T> {
     }
 
 
-    private void submitFilter(T element, Function<? super T, Boolean> fun, ObservableEmitter<T> oe) {
+    private void submitFilter(T element, Predicate<? super T> fun, ObservableEmitter<T> oe) {
         submitWaitIfNeeded();
         executorService.submit(() -> {
             try {
-                if (fun.apply(element)) {
+                if (fun.test(element)) {
                     oe.onNext(element);
                 }
             } catch (Exception e) {
@@ -378,7 +377,7 @@ public class ParallelObservable<T> {
         }
     }
 
-    private ParallelObservable<T> getFilterParallelObservable(Function<? super T, Boolean> fun) {
+    private ParallelObservable<T> getFilterParallelObservable(Predicate<? super T> fun) {
         Observable<T> o = Observable.create(e -> {
             initExecutorService();
             observable.forEachWhile((T t) -> {
@@ -400,7 +399,7 @@ public class ParallelObservable<T> {
 
 
 
-    private ParallelObservable<T> getFilterParallelObservableBuffered(Function<? super T, Boolean> fun) {
+    private ParallelObservable<T> getFilterParallelObservableBuffered(Predicate<? super T> fun) {
         Observable<T> o = Observable.create(new ObservableOnSubscribe<T>() {
             int bufferIndex = 0;
 
@@ -451,12 +450,16 @@ public class ParallelObservable<T> {
     }
 
 
-    private void submitFilterBuffered(T element, Function<? super T, Boolean> fun, ObservableEmitter<T> oe, List<Future<Pair<T, Boolean>>> buffer, int bufferIndex) throws Exception {
+    public  static <T>  Predicate<? super T> not(Predicate<? super T> predicate){
+        return (T t)-> !predicate.test(t);
+    }
+
+    private void submitFilterBuffered(T element, Predicate<? super T> fun, ObservableEmitter<T> oe, List<Future<Pair<T, Boolean>>> buffer, int bufferIndex) throws Exception {
         submitWaitIfNeeded();
         Future<Pair<T, Boolean>> future = executorService.submit(() -> {
             Boolean r = false;
             try {
-                r = fun.apply(element);
+                r = fun.test(element);
             } catch (Exception e) {
                 oe.onError(e);
             }

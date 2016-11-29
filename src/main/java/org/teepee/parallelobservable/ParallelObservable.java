@@ -216,7 +216,6 @@ public class ParallelObservable<T> {
 
 
     private ParallelObservable<T> getDoOnNextObservableBuffered(Consumer<? super T> fun) {
-        ParallelObservable<T> p = this;
         Observable<T> o = Observable.create(new ObservableOnSubscribe<T>() {
             int bufferIndex = 0;
 
@@ -226,7 +225,7 @@ public class ParallelObservable<T> {
                 initExecutorService();
                 final List<T> buffer = new ArrayList<T>(bufferSize);
                 observable.forEachWhile((T t) -> {
-                            p.submitBuffered(t, fun, e, buffer, bufferIndex);
+                            submitBuffered(t, fun, e, buffer, bufferIndex);
                             bufferIndex++;
                             if (bufferIndex == bufferSize) {
                                 executorService.shutdown();
@@ -374,12 +373,10 @@ public class ParallelObservable<T> {
     }
 
     private ParallelObservable<T> getFilterParallelObservable(Function<? super T, Boolean> fun) {
-        ParallelObservable<T> parallelObservable = this;
-
         Observable<T> o = Observable.create(e -> {
             initExecutorService();
             observable.forEachWhile((T t) -> {
-                        parallelObservable.submitFilter(t, fun, e);
+                        submitFilter(t, fun, e);
                         return !e.isDisposed();
                     }
             );
@@ -398,7 +395,6 @@ public class ParallelObservable<T> {
 
 
     private ParallelObservable<T> getFilterParallelObservableBuffered(Function<? super T, Boolean> fun) {
-        ParallelObservable<T> p = this;
         Observable<T> o = Observable.create(new ObservableOnSubscribe<T>() {
             int bufferIndex = 0;
 
@@ -408,7 +404,7 @@ public class ParallelObservable<T> {
                 initExecutorService();
                 final List<Future<Pair<T, Boolean>>> buffer = new ArrayList<>(bufferSize);
                 observable.forEachWhile((T t) -> {
-                            p.submitFilterBuffered(t, fun, e, buffer, bufferIndex);
+                            submitFilterBuffered(t, fun, e, buffer, bufferIndex);
                             bufferIndex++;
                             if (bufferIndex == bufferSize) {
                                 executorService.shutdown();

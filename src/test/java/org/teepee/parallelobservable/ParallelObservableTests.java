@@ -53,8 +53,8 @@ public class ParallelObservableTests {
     public void getObservable() throws Exception {
         Observable<Integer> integerObservable = Observable.range(999999999, 1000000000);
         ParallelObservable<Integer> integerParallelObservable = new ParallelObservable<Integer>(integerObservable);
-        assert integerParallelObservable.getObservable() == integerObservable; //get the source observable, no thread safe
-        assert integerParallelObservable.toObservable() != integerObservable; // trasfrom parallel observable back to sequenzial observable
+        assert integerParallelObservable.observable() == integerObservable; //get the source observable, no thread safe
+        assert integerParallelObservable.serialObservable() != integerObservable; // trasfrom parallel observable back to sequenzial observable
 
     }
 
@@ -68,7 +68,7 @@ public class ParallelObservableTests {
             return BigInteger.valueOf(c).isProbablePrime(100000);
         });
 
-        assert parallelObservablePrimes.toObservable().take(100000).toList().blockingGet().size() == 100000;
+        assert parallelObservablePrimes.serialObservable().take(100000).toList().blockingGet().size() == 100000;
 
     }
 
@@ -86,7 +86,7 @@ public class ParallelObservableTests {
                     String s = i.toString();
                     return s.charAt(s.length() - 1) == '3';
                 });
-        assert parallelObservablePrimes.toObservable().take(10000).toList().blockingGet().size() == 10000;
+        assert parallelObservablePrimes.serialObservable().take(10000).toList().blockingGet().size() == 10000;
     }
 
 
@@ -105,7 +105,7 @@ public class ParallelObservableTests {
                     return s.charAt(s.length() - 1) == '3';
                 });
         Long time0 = System.currentTimeMillis();
-        assert parallelObservablePrimes.take(10000).getObservable().toList().blockingGet().size() == 10000;
+        assert parallelObservablePrimes.take(10000).observable().toList().blockingGet().size() == 10000;
         Long time1 = System.currentTimeMillis();
 
         Long parallelElapse = time1 - time0;
@@ -137,7 +137,7 @@ public class ParallelObservableTests {
             return c % 2 == 0;
         });
 
-        assert parallelObservablePrimes.toObservable().toList().blockingGet().size() == 500000;
+        assert parallelObservablePrimes.serialObservable().toList().blockingGet().size() == 500000;
     }
 
 
@@ -166,7 +166,7 @@ public class ParallelObservableTests {
                     return s.charAt(s.length() - 1) != '2';
                 });
         long time0 = System.currentTimeMillis();
-        assert parallelObservablePrimes.toObservable().toList().blockingGet().size() == 1600;
+        assert parallelObservablePrimes.serialObservable().toList().blockingGet().size() == 1600;
         long parallelElapse = System.currentTimeMillis() - time0;
 
 
@@ -212,7 +212,7 @@ public class ParallelObservableTests {
         integerParallelObservable.withBufferSize(100);
         ParallelObservable<Integer> evens = integerParallelObservable.withThreadsPoolSize(4).filter((Integer i) -> i % 2 == 0);
 
-        assert evens.toObservable().take(10000).toList().blockingGet().size() == 10000;
+        assert evens.serialObservable().take(10000).toList().blockingGet().size() == 10000;
 
     }
 
@@ -224,7 +224,7 @@ public class ParallelObservableTests {
 
         ParallelObservable<String> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).map(Object::toString);
 
-        assert parallelObservablePrimes.toObservable().take(10000).toList().blockingGet().size() == 10000;
+        assert parallelObservablePrimes.serialObservable().take(10000).toList().blockingGet().size() == 10000;
 
     }
 
@@ -237,7 +237,7 @@ public class ParallelObservableTests {
         ParallelObservable<String> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).map(Object::toString);
 
 
-        assert parallelObservablePrimes.toObservable().take(10000).toList().blockingGet().size() == 10000;
+        assert parallelObservablePrimes.serialObservable().take(10000).toList().blockingGet().size() == 10000;
 
     }
 
@@ -249,7 +249,7 @@ public class ParallelObservableTests {
 
         ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).doOnNext(System.out::println);
 
-        assert parallelObservablePrimes.toObservable().take(10).toList().blockingGet().size() == 10;
+        assert parallelObservablePrimes.serialObservable().take(10).toList().blockingGet().size() == 10;
 
     }
 
@@ -258,7 +258,7 @@ public class ParallelObservableTests {
         ParallelObservable<Integer> po = ParallelObservable.range(0, 10000000);
 
         assert po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeWhile((Integer i) -> i < 5000000)
-                .toObservable().toList().blockingGet().size() <= 5000000;
+                .serialObservable().toList().blockingGet().size() <= 5000000;
     }
 
     @org.testng.annotations.Test
@@ -266,7 +266,7 @@ public class ParallelObservableTests {
         ParallelObservable<Integer> po = ParallelObservable.range(0, 10000000);
 
         long count = po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).takeUntil((Integer i) -> i >= 5000000)
-                .toObservable().toList().blockingGet().size();
+                .serialObservable().toList().blockingGet().size();
         //System.out.println(count);
         assert count <= 5000010;
     }
@@ -279,7 +279,7 @@ public class ParallelObservableTests {
         integerParallelObservable.withBufferSize(100);
         ParallelObservable<Integer> parallelObservablePrimes = integerParallelObservable.withThreadsPoolSize(4).doOnNext(System.out::println);
 
-        Single<List<Integer>> s = parallelObservablePrimes.toObservable().take(10000).toList();
+        Single<List<Integer>> s = parallelObservablePrimes.serialObservable().take(10000).toList();
         assert s.blockingGet().size() == 10000;
 
     }

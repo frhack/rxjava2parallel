@@ -32,7 +32,7 @@ public class ParallelObservable<T> {
     }
 
 
-    public Observable<T> getObservable() {
+    public Observable<T> observable() {
         return observable;
     }
 
@@ -90,10 +90,16 @@ public class ParallelObservable<T> {
     }
 
 
-    public Observable<T> toObservable() {
-        return getObservable().serialize();
-        //return new ToObservable<T>(this).getObservable();
+    public Observable<T> serialObservable() {
+        return observable.serialize();
+        //return new ToObservable<T>(this).observable();
     }
+
+
+    public ParallelObservable<T> serialize() {
+        return new ParallelObservable<>(observable.serialize());
+    }
+
 
 
     public ParallelObservable<T> filter(Function<? super T, Boolean> fun) {

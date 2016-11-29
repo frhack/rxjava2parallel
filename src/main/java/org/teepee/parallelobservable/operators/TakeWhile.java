@@ -6,14 +6,8 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.exceptions.Exceptions;
 import io.reactivex.functions.Predicate;
 import io.reactivex.internal.disposables.DisposableHelper;
-import io.reactivex.internal.disposables.EmptyDisposable;
 import io.reactivex.plugins.RxJavaPlugins;
 import org.teepee.parallelobservable.ParallelObservable;
-
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by francesco on 20/11/2016.
@@ -26,7 +20,7 @@ public class TakeWhile<T> extends ParallelObservable<T> {
                 new Observable<T>() {
                     @Override
                     protected void subscribeActual(Observer<? super T> observer) {
-                        source.getObservable().subscribe(new TakeWhile.TakeWhileObserver<T>(observer, predicate));
+                        source.observable().subscribe(new TakeWhile.TakeWhileObserver<T>(observer, predicate));
                     }
                 });
     }

@@ -24,7 +24,7 @@ public class Take<T> extends ParallelObservable<T> {
                 new Observable<T>() {
                     @Override
                     protected void subscribeActual(Observer<? super T> observer) {
-                        source.getObservable().subscribe(new Take.TakeObserver(observer, n));
+                        source.observable().subscribe(new Take.TakeObserver(observer, n));
                     }
                 });
     }

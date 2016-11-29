@@ -20,7 +20,7 @@ public class TakeUntil<T> extends ParallelObservable<T> {
                 new Observable<T>() {
                     @Override
                     protected void subscribeActual(Observer<? super T> observer) {
-                        source.getObservable().subscribe(new TakeUntil.TakeUntilPredicateObserver<T>(observer, predicate));
+                        source.observable().subscribe(new TakeUntil.TakeUntilPredicateObserver<T>(observer, predicate));
                     }
                 });
     }

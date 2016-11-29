@@ -23,7 +23,7 @@ public class ToObservable<T> extends ParallelObservable<T> {
                 new Observable<T>() {
                     @Override
                     protected void subscribeActual(Observer<? super T> observer) {
-                        source.getObservable().subscribe(new ToObservable.TakeObserver(observer));
+                        source.observable().subscribe(new ToObservable.TakeObserver(observer));
                     }
                 });
     }

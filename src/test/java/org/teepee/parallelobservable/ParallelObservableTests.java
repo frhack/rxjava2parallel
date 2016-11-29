@@ -271,6 +271,16 @@ public class ParallelObservableTests {
         assert count <= 5000010;
     }
 
+    @org.testng.annotations.Test
+    public void testTake() throws Exception {
+        ParallelObservable<Integer> po = ParallelObservable.range(0, 10000000);
+
+        long count = po.withThreadsPoolSize(4).doOnNext((Integer i) -> i++).withThreadsPoolSize(4).doOnNext((Integer i) -> i++).take(5000000)
+                .observable().toList().blockingGet().size();
+        //System.out.println(count);
+        assert count == 5000000;
+    }
+
 
     @org.testng.annotations.Test
     public void testDoOnNextBuffered() throws Exception {

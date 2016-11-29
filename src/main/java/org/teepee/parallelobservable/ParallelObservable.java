@@ -6,10 +6,10 @@ import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
+import io.reactivex.internal.operators.observable.ObservableTake;
+import io.reactivex.internal.operators.observable.ObservableTakeUntilPredicate;
+import io.reactivex.internal.operators.observable.ObservableTakeWhile;
 import javafx.util.Pair;
-import org.teepee.parallelobservable.operators.Take;
-import org.teepee.parallelobservable.operators.TakeUntil;
-import org.teepee.parallelobservable.operators.TakeWhile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,16 +78,16 @@ public class ParallelObservable<T> {
     }
 
     public ParallelObservable<T> take(long n) {
-        return new Take<>(this, n);
+        return  new ParallelObservable<>(new ObservableTake<T>(observable(),n));
     }
 
     public ParallelObservable<T> takeWhile(Predicate<? super T> predicate) {
-        return new TakeWhile<>(this, predicate);
+        return  new ParallelObservable<>(new ObservableTakeWhile<T>(observable(),predicate));
     }
 
     public ParallelObservable<T> takeUntil(Predicate<? super T> predicate) {
-        return new TakeUntil<>(this, predicate);
-    }
+        return  new ParallelObservable<>(new ObservableTakeUntilPredicate<T>(observable(),predicate));
+   }
 
 
     public Observable<T> serialObservable() {

@@ -279,6 +279,7 @@ public class ParallelObservableTests {
                 .observable().toList().blockingGet().size();
         //System.out.println(count);
         assert count == 5000000;
+        assert po.take(10).isSerialized();
     }
 
 

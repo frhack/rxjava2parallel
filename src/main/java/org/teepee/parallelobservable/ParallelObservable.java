@@ -80,9 +80,7 @@ public class ParallelObservable<T> {
     }
 
     public ParallelObservable<T> take(long n) {
-        ParallelObservable po = new Take<>(this,n);
-        po.serialized = true;
-        return po;
+        return new Take<>(this,n);
     }
 
     public ParallelObservable<T> takeWhile(Predicate<? super T> predicate) {
@@ -476,5 +474,8 @@ public boolean isSerialized(){
     return serialized;
 }
 
+private void setSerialized(boolean serialized){
+    this.serialized = serialized;
+}
 
 }

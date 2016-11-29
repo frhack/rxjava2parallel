@@ -29,6 +29,10 @@ public class Take<T> extends ParallelObservable<T> {
                 });
     }
 
+    @Override
+    public boolean isSerialized(){
+        return true;
+    }
 
     static final class TakeObserver<T> implements Observer<T>, Disposable {
         final Observer<? super T> actual;

@@ -26,6 +26,7 @@ public class ParallelObservable<T> {
     private Observable<T> observable;
     private Integer bufferSize;
     private Integer threadsPoolSize;
+    private boolean serialized = false;
     BlockingQueue<Runnable> tqueue;
 
     public ParallelObservable(Observable<T> observable) {
@@ -79,7 +80,9 @@ public class ParallelObservable<T> {
     }
 
     public ParallelObservable<T> take(long n) {
-        return  new Take<>(this,n);
+        ParallelObservable po = new Take<>(this,n);
+        po.serialized = true;
+        return po;
     }
 
     public ParallelObservable<T> takeWhile(Predicate<? super T> predicate) {
@@ -92,13 +95,17 @@ public class ParallelObservable<T> {
 
 
     public Observable<T> serialObservable() {
+        if(serialized) return observable;
         return observable.serialize();
         //return new ToObservable<T>(this).observable();
     }
 
 
     public ParallelObservable<T> serialize() {
-        return new ParallelObservable<>(observable.serialize());
+        if(serialized) return  this;
+        ParallelObservable<T> po = new ParallelObservable<>(observable.serialize());
+        po.serialized = true;
+        return po;
     }
 
 
@@ -464,6 +471,10 @@ public class ParallelObservable<T> {
             buffer.set(bufferIndex, future);
         }
     }
+
+public boolean isSerialized(){
+    return serialized;
+}
 
 
 }

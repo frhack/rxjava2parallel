@@ -10,6 +10,7 @@ import io.reactivex.internal.operators.observable.ObservableTake;
 import io.reactivex.internal.operators.observable.ObservableTakeUntilPredicate;
 import io.reactivex.internal.operators.observable.ObservableTakeWhile;
 import javafx.util.Pair;
+import org.teepee.parallelobservable.operators.Take;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,7 +79,7 @@ public class ParallelObservable<T> {
     }
 
     public ParallelObservable<T> take(long n) {
-        return  new ParallelObservable<>(new ObservableTake<T>(observable(),n));
+        return  new Take<>(this,n);
     }
 
     public ParallelObservable<T> takeWhile(Predicate<? super T> predicate) {

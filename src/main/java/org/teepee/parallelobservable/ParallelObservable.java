@@ -6,9 +6,6 @@ import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
-import io.reactivex.internal.operators.observable.ObservableTake;
-import io.reactivex.internal.operators.observable.ObservableTakeUntilPredicate;
-import io.reactivex.internal.operators.observable.ObservableTakeWhile;
 import javafx.util.Pair;
 import org.teepee.parallelobservable.operators.Take;
 
@@ -31,6 +28,7 @@ public class ParallelObservable<T> {
 
     public ParallelObservable(Observable<T> observable) {
         this.observable = observable;
+        this.threadsPoolSize = Runtime.getRuntime().availableProcessors() + 1;
     }
 
 
@@ -38,30 +36,31 @@ public class ParallelObservable<T> {
         return observable;
     }
 
-    public Integer getBufferSize() {
-        return bufferSize;
+
+    public ParallelObservable<T> withBuffer(Integer bufferSize) {
+        ParallelObservable<T> p = getNew(observable);
+        p.bufferSize = bufferSize;
+        return p;
     }
 
-    public ParallelObservable<T> withBufferSize(Integer bufferSize) {
-        this.bufferSize = bufferSize;
-        return this;
+    public ParallelObservable<T> unparallel() {
+        return withThreads(0);
     }
 
-    public Integer getThreadsPoolSize() {
-        return threadsPoolSize;
+
+    public ParallelObservable<T> withThreads(Integer threadsPoolSize) {
+        ParallelObservable<T> p = getNew(observable);
+        p.threadsPoolSize = threadsPoolSize;
+        return p;
     }
 
-    public ParallelObservable<T> withThreadsPoolSize(Integer threadsPoolSize) {
-        this.threadsPoolSize = threadsPoolSize;
-        return this;
-    }
 
     public static <T> ParallelObservable<T> fromIterable(Iterable<? extends T> source) {
         return new ParallelObservable<T>(Observable.fromIterable(source));
     }
 
     public static <T> ParallelObservable<T> fromObservable(Observable<T> source) {
-        return new ParallelObservable<T>(source);
+        return new ParallelObservable<>(source);
     }
 
 
@@ -70,6 +69,7 @@ public class ParallelObservable<T> {
     }
 
     public ParallelObservable<T> doOnNext(Consumer<? super T> fun) {
+        if (threadsPoolSize == 0) return getNewBufferedIfNeeded(observable.doOnNext(fun));
         ParallelObservable<T> p;
         if (bufferSize == null) {
             p = getDoOnNextObservable(fun);
@@ -80,36 +80,53 @@ public class ParallelObservable<T> {
     }
 
     public ParallelObservable<T> take(long n) {
-        return new Take<>(this,n);
+        return new Take<>(this, n);
     }
 
     public ParallelObservable<T> takeWhile(Predicate<? super T> predicate) {
-        return  new ParallelObservable<>(new ObservableTakeWhile<T>(observable(),predicate));
+        return this.map((T t) -> {
+            Pair<T, Boolean> pair = new Pair(t, predicate.test(t));
+            return pair;
+        }).unparallelTtakeWhile((Pair<T, Boolean> pair) -> pair.getValue()).map((Pair<T, Boolean> pair) -> pair.getKey());
+        //return  new ParallelObservable<>(new ObservableTakeWhile<T>(observable(),predicate));
     }
 
+
+    public ParallelObservable<T> unparallelTtakeWhile(Predicate<? super T> fun) {
+        return getNew(observable.takeWhile(fun));
+    }
+
+
     public ParallelObservable<T> takeUntil(Predicate<? super T> predicate) {
-        return  new ParallelObservable<>(new ObservableTakeUntilPredicate<T>(observable(),predicate));
-   }
+        return this.map((T t) -> {
+            Pair<T, Boolean> pair = new Pair(t, predicate.test(t));
+            return pair;
+        }).unparallelTtakeUntil((Pair<T, Boolean> pair) -> pair.getValue()).map((Pair<T, Boolean> pair) -> pair.getKey());
+    }
+
+    public ParallelObservable<T> unparallelTtakeUntil(Predicate<? super T> fun) {
+        return getNew(observable.takeUntil(fun));
+    }
 
 
     public Observable<T> serialObservable() {
-        if(serialized) return observable;
+        if (serialized) return observable;
         return observable.serialize();
         //return new ToObservable<T>(this).observable();
     }
 
 
     public ParallelObservable<T> serialize() {
-        if(serialized) return  this;
-        ParallelObservable<T> po = new ParallelObservable<>(observable.serialize());
+        if (serialized) return this;
+        ParallelObservable<T> po = getNew(observable.serialize());
         po.serialized = true;
         return po;
     }
 
 
-
     public ParallelObservable<T> filter(Predicate<? super T> fun) {
         ParallelObservable<T> o;
+        if (threadsPoolSize == 0) return getNewBufferedIfNeeded(observable.filter(fun));
         if (bufferSize == null) {
             o = getFilterParallelObservable(fun);
         } else {
@@ -118,9 +135,12 @@ public class ParallelObservable<T> {
         return o;
     }
 
+
     public final <R> ParallelObservable<R> map(Function<? super T, ? extends R> fun) {
         ParallelObservable<R> o;
-
+        if (threadsPoolSize == 0) {
+            return getNewBufferedIfNeeded(observable.map(fun));
+        }
         if (bufferSize == null) {
             o = getMapParallelObservable(fun);
         } else {
@@ -151,6 +171,35 @@ public class ParallelObservable<T> {
     }
 
 
+    private ParallelObservable<T> getDoOnNextObservableNEW(Consumer<? super T> fun) {
+        Observable<T> o = Observable.create(e -> {
+                    initExecutorService();
+                    System.out.println("XXX LLL" + e.isDisposed());
+                    observable.doOnNext((T t) -> {
+                        System.out.println("XXX AAAA LLL" + e.isDisposed());
+                        submit(t, fun, e);
+                        ;
+                    });
+                    observable.doOnComplete(() -> {
+                        System.out.println("XXX COMPLETE");
+                        e.onComplete();
+                        executorService.shutdown();
+                        try {
+                            executorService.awaitTermination(3600, TimeUnit.SECONDS);
+                        } catch (Exception ee) {
+                            e.onError(ee);
+                        }
+                    });
+                    //e.onComplete();
+                }
+
+
+        );
+//        o.doOnComplete(()->e.onComplete());
+        return getNew(o);
+    }
+
+
     private ParallelObservable<T> getDoOnNextObservable(Consumer<? super T> fun) {
         Observable<T> o = Observable.create(e -> {
 
@@ -160,19 +209,22 @@ public class ParallelObservable<T> {
                         return !e.isDisposed();
                     }
             );
-            executorService.shutdown();
-            try {
-                executorService.awaitTermination(3600, TimeUnit.SECONDS);
-            } catch (Exception ee) {
-                e.onError(ee);
-            }
-            e.onComplete();
+            observable.doOnComplete(() -> {
+                executorService.shutdown();
+                try {
+                    executorService.awaitTermination(3600, TimeUnit.SECONDS);
+                } catch (Exception ee) {
+                    e.onError(ee);
+                }
+                e.onComplete();
+            });
+
         });
-        return new ParallelObservable<>(o);
+        return getNew(o);
     }
 
 
-    private  <R> ParallelObservable<R> getMapParallelObservableBuffered(Function<? super T, ? extends R> fun) {
+    private <R> ParallelObservable<R> getMapParallelObservableBuffered(Function<? super T, ? extends R> fun) {
         Observable<R> o = Observable.create(new ObservableOnSubscribe<R>() {
             int bufferIndex = 0;
 
@@ -249,24 +301,32 @@ public class ParallelObservable<T> {
                         }
                 );
 
-                executorService.shutdown();
-                try {
-                    executorService.awaitTermination(3600, TimeUnit.SECONDS);
-                } catch (Exception ee) {
-                    e.onError(ee);
-                }
-                for (int i = 0; i < bufferIndex; i++) {
-                    e.onNext(buffer.get(i));
-                }
-                e.onComplete();
-                bufferIndex = 0;
+
+
+
+
+                observable.doOnComplete(() -> {
+                    executorService.shutdown();
+                    try {
+                        executorService.awaitTermination(3600, TimeUnit.SECONDS);
+                    } catch (Exception ee) {
+                        e.onError(ee);
+                    }
+                    for (int i = 0; i < bufferIndex; i++) {
+                        e.onNext(buffer.get(i));
+                    }
+                    bufferIndex = 0;
+                    e.onComplete();
+                });
+
+
             }
         });
-        return new ParallelObservable<>(o);
+        return getNew(o);
     }
 
 
-    private void initExecutorService() {
+    public void initExecutorService() {
         tqueue = new ArrayBlockingQueue<>(1000);
         Integer size = threadsPoolSize;
         //FIXME TODO
@@ -316,7 +376,6 @@ public class ParallelObservable<T> {
             }
         });
     }
-
 
 
     private void submitWaitIfNeeded() {
@@ -397,8 +456,6 @@ public class ParallelObservable<T> {
     }
 
 
-
-
     private ParallelObservable<T> getFilterParallelObservableBuffered(Predicate<? super T> fun) {
         Observable<T> o = Observable.create(new ObservableOnSubscribe<T>() {
             int bufferIndex = 0;
@@ -450,8 +507,8 @@ public class ParallelObservable<T> {
     }
 
 
-    public  static <T>  Predicate<? super T> not(Predicate<? super T> predicate){
-        return (T t)-> !predicate.test(t);
+    public static <T> Predicate<? super T> not(Predicate<? super T> predicate) {
+        return (T t) -> !predicate.test(t);
     }
 
     private void submitFilterBuffered(T element, Predicate<? super T> fun, ObservableEmitter<T> oe, List<Future<Pair<T, Boolean>>> buffer, int bufferIndex) throws Exception {
@@ -473,12 +530,22 @@ public class ParallelObservable<T> {
         }
     }
 
-public boolean isSerialized(){
-    return serialized;
-}
+    private <S> ParallelObservable<S> getNew(Observable<S> observable) {
+        ParallelObservable<S> parallelObservable = new ParallelObservable<S>(observable);
+        return parallelObservable;
+    }
 
-private void setSerialized(boolean serialized){
-    this.serialized = serialized;
-}
+    private <S> ParallelObservable<S> getNewBufferedIfNeeded(Observable<S> observable) {
+        if (bufferSize != null) {
+            return getNew(observable.buffer(bufferSize).flatMap(l -> Observable.fromIterable(l)));
+        } else {
+            return getNew(observable);
+        }
+    }
+
+
+    public boolean isSerialized() {
+        return serialized;
+    }
 
 }
